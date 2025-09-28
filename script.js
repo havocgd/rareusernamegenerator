@@ -1,25 +1,37 @@
 let stopSearch = false;
 const rejectedCache = new Set(JSON.parse(localStorage.getItem("rejectedUsernames") || "[]"));
 
+// Replace with your actual Cloudflare Worker URL
+const PROXY_URL = "https://rareproxy.havoc.workers.dev";
+
 function generateRandomUsername(length) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
 async function validateUsername(username) {
-  const response = await fetch("https://corsproxy.io/?https://auth.roblox.com/v1/usernames/validate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username,
-      context: "Signup",
-      birthday: "2009-11-26T13:00:00.000Z"
-    })
-  });
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        context: "Signup",
+        birthday: "2009-11-26T13:00:00.000Z"
+      })
+    });
 
-  if (!response.ok) return false;
-  const result = await response.json();
-  return result.isValid && result.code === 0;
+    if (!response.ok) {
+      console.error("Proxy error:", response.status);
+      return false;
+    }
+
+    const result = await response.json();
+    return result.isValid && result.code === 0;
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return false;
+  }
 }
 
 async function generateUsername() {
@@ -44,7 +56,7 @@ async function generateUsername() {
     } else {
       rejectedCache.add(candidate);
       localStorage.setItem("rejectedUsernames", JSON.stringify([...rejectedCache]));
-      document.getElementById("result").textContent = `Checking: ${candidate} → ❌ Invalid`;
+      document.getElementById("result").textContent = `❌ ${candidate} is taken`;
     }
 
     length = length < 10 ? length : length + 1;
