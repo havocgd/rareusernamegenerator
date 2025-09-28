@@ -54,7 +54,7 @@ async function generateUsername() {
   document.getElementById("stop").style.display = "none";
 }
 
-// Stop the search loop
+// Stop the search loop.
 function stopUsernameSearch() {
   stopSearch = true;
 }
