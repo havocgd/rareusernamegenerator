@@ -1,55 +1,28 @@
-let stopSearch = false;
+async function generateBatch(count = 1000) {
+  const usernames = Array.from({ length: count }, () => generateRandomUsername(3));
 
-function generateRandomUsername(length) {
+  const responses = await Promise.allSettled(
+    usernames.map(username =>
+      fetch("https://rareproxy.havocgdash.workers.dev/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usernames: [username] })
+      }).then(res => res.json())
+    )
+  );
+
+  const results = responses
+    .filter(r => r.status === "fulfilled")
+    .flatMap(r => r.value)
+    .filter(r => r.valid);
+
+  console.log(`✅ ${results.length} available usernames`);
+  console.log(results.map(r => r.username));
+}
+
+function generateRandomUsername(length = 3) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
-async function validateUsername(username) {
-  try {
-    const response = await fetch("https://rareproxy.havocgdash.workers.dev", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username })
-    });
-
-    const result = await response.json();
-    return result.valid;
-  } catch (err) {
-    console.error("Validation error:", err);
-    return false;
-  }
-}
-
-async function generateUsername() {
-  stopSearch = false;
-  document.getElementById("result").textContent = "🔍 Searching...";
-  document.getElementById("stop").style.display = "inline";
-
-  let length = 3;
-
-  while (!stopSearch) {
-    const candidate = generateRandomUsername(length);
-    document.getElementById("result").textContent = `Checking: ${candidate}...`;
-
-    const isValid = await validateUsername(candidate);
-    if (stopSearch) break;
-
-    if (isValid) {
-      document.getElementById("result").textContent = `✅ Available: ${candidate}`;
-      document.getElementById("stop").style.display = "none";
-      return;
-    } else {
-      document.getElementById("result").textContent = `❌ ${candidate} is taken`;
-    }
-
-    length = length < 10 ? length : length + 1;
-  }
-
-  document.getElementById("result").textContent = "⛔ Search stopped.";
-  document.getElementById("stop").style.display = "none";
-}
-
-function stopUsernameSearch() {
-  stopSearch = true;
-}
+generateBatch(1000);
