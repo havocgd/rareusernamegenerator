@@ -7,7 +7,7 @@ function generateRandomUsername(length) {
 }
 
 async function validateUsername(username) {
-  const response = await fetch("https://auth.roblox.com/v1/usernames/validate", {
+  const response = await fetch("https://corsproxy.io/?https://auth.roblox.com/v1/usernames/validate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
