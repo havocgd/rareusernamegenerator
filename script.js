@@ -1,8 +1,4 @@
 let stopSearch = false;
-const rejectedCache = new Set(JSON.parse(localStorage.getItem("rejectedUsernames") || "[]"));
-
-// Replace with your actual Cloudflare Worker URL
-const PROXY_URL = "https://rareproxy.havoc.workers.dev";
 
 function generateRandomUsername(length) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -11,41 +7,31 @@ function generateRandomUsername(length) {
 
 async function validateUsername(username) {
   try {
-    const response = await fetch(PROXY_URL, {
+    const response = await fetch("https://rareproxy.havoc.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        context: "Signup",
-        birthday: "2009-11-26T13:00:00.000Z"
-      })
+      body: JSON.stringify({ username })
     });
 
-    if (!response.ok) {
-      console.error("Proxy error:", response.status);
-      return false;
-    }
-
     const result = await response.json();
-    return result.isValid && result.code === 0;
+    return result.valid;
   } catch (err) {
-    console.error("Fetch failed:", err);
+    console.error("Validation error:", err);
     return false;
   }
 }
 
 async function generateUsername() {
   stopSearch = false;
-  document.getElementById("result").textContent = "🔍 Starting search...";
+  document.getElementById("result").textContent = "🔍 Searching...";
   document.getElementById("stop").style.display = "inline";
 
   let length = 3;
 
   while (!stopSearch) {
     const candidate = generateRandomUsername(length);
-    if (rejectedCache.has(candidate)) continue;
-
     document.getElementById("result").textContent = `Checking: ${candidate}...`;
+
     const isValid = await validateUsername(candidate);
     if (stopSearch) break;
 
@@ -54,8 +40,6 @@ async function generateUsername() {
       document.getElementById("stop").style.display = "none";
       return;
     } else {
-      rejectedCache.add(candidate);
-      localStorage.setItem("rejectedUsernames", JSON.stringify([...rejectedCache]));
       document.getElementById("result").textContent = `❌ ${candidate} is taken`;
     }
 
