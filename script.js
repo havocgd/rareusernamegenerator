@@ -58,7 +58,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  window.generateUsername = generateUsername;
+ window.generateUsername = async function () {
+  if (searching) return;
+  searching = true;
+  generateBtn.style.display = "none";
+  stopBtn.style.display = "inline-block";
+  updateStatus("🔍 Searching for rare usernames...");
+
+  while (searching) {
+    const batchSize = 100;
+    const usernames = Array.from({ length: batchSize }, () => generateRandomUsername(3));
+
+    try {
+      const res = await fetch("https://rareproxy.havocgdash.workers.dev/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usernames })
+      });
+
+      const data = await res.json();
+      const available = data.filter(r => r.valid).map(r => r.username);
+
+      if (available.length > 0) {
+        updateStatus(`✅ Found: ${available.join(", ")}`, "#3f3");
+        searching = false;
+        generateBtn.style.display = "inline-block";
+        stopBtn.style.display = "none";
+        return;
+      } else {
+        updateStatus(`⏳ Checked ${batchSize} more... still searching`, "#999");
+      }
+    } catch (err) {
+      updateStatus("⚠️ Error during batch request", "#f33");
+      console.error("Batch error:", err);
+      searching = false;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+};
+
 
   window.stopUsernameSearch = () => {
     searching = false;
