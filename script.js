@@ -33,24 +33,28 @@ async function validateUsername(username) {
 // Start the infinite search loop
 async function generateUsername() {
   stopSearch = false;
-  document.getElementById("result").textContent = "🔍 Searching for rare usernames...";
+  document.getElementById("result").textContent = "🔍 Starting search...";
   document.getElementById("stop").style.display = "inline";
 
   let length = 3;
 
   while (!stopSearch) {
     const candidate = generateRandomUsername(length);
-    document.getElementById("result").textContent = `Trying: ${candidate}`;
+    document.getElementById("result").textContent = `Checking: ${candidate}...`;
 
     const isValid = await validateUsername(candidate);
+    if (stopSearch) break;
+
     if (isValid) {
       document.getElementById("result").textContent = `✅ Available: ${candidate}`;
       document.getElementById("stop").style.display = "none";
       return;
+    } else {
+      document.getElementById("result").textContent = `Checking: ${candidate} → ❌ Invalid`;
     }
 
-    length = length < 10 ? length : length + 1; // Expand length slowly if needed
-    await new Promise(r => setTimeout(r, 100)); // Optional delay for UX
+    length = length < 10 ? length : length + 1;
+    await new Promise(r => setTimeout(r, 100)); // Optional delay
   }
 
   document.getElementById("result").textContent = "⛔ Search stopped.";
