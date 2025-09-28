@@ -7,7 +7,7 @@ function generateRandomUsername(length) {
 
 async function validateUsername(username) {
   try {
-    const response = await fetch("https://rareproxy.havoc.workers.dev", {
+    const response = await fetch("https://rareproxy.havocgdash.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username })
