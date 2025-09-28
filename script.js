@@ -1,5 +1,7 @@
 // script.js
 
+let stopSearch = false;
+
 // Generate a random alphanumerical username of given length
 function generateRandomUsername(length) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -22,34 +24,40 @@ async function validateUsername(username) {
     })
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to reach backend");
-  }
+  if (!response.ok) return false;
 
   const result = await response.json();
   return result.isValid && result.code === 0;
 }
 
-// Try usernames starting from length 3 and increase until one is valid
+// Start the infinite search loop
 async function generateUsername() {
+  stopSearch = false;
   document.getElementById("result").textContent = "🔍 Searching for rare usernames...";
-  let length = 3;
-  let attempts = 0;
+  document.getElementById("stop").style.display = "inline";
 
-  while (length <= 10) {
+  let length = 3;
+
+  while (!stopSearch) {
     const candidate = generateRandomUsername(length);
+    document.getElementById("result").textContent = `Trying: ${candidate}`;
+
     const isValid = await validateUsername(candidate);
     if (isValid) {
       document.getElementById("result").textContent = `✅ Available: ${candidate}`;
+      document.getElementById("stop").style.display = "none";
       return;
     }
 
-    attempts++;
-    if (attempts >= 100) {
-      length++;
-      attempts = 0;
-    }
+    length = length < 10 ? length : length + 1; // Expand length slowly if needed
+    await new Promise(r => setTimeout(r, 100)); // Optional delay for UX
   }
 
-  document.getElementById("result").textContent = "❌ Couldn't find a valid username. Try again.";
+  document.getElementById("result").textContent = "⛔ Search stopped.";
+  document.getElementById("stop").style.display = "none";
+}
+
+// Stop the search loop
+function stopUsernameSearch() {
+  stopSearch = true;
 }
