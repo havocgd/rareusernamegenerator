@@ -1,5 +1,3 @@
-// script.js
-
 let stopSearch = false;
 
 // Generate a random alphanumerical username of given length
