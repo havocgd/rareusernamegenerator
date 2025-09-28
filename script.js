@@ -30,7 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       activeRequests++;
       try {
-        const res = await fetch(`https://rareproxy.havocgdash.workers.dev/batch?${query}`);
+       const res = await fetch("https://rareproxy.havocgdash.workers.dev/batch", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ usernames })
+});
+
         const data = await res.json();
         const available = data.filter(r => r.valid).map(r => r.username);
 
