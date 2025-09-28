@@ -1,7 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const button = document.getElementById("generate");
-  const output = document.getElementById("output");
-  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+  const stopBtn = document.getElementById("stop");
+  const generateBtn = document.querySelector("button[onclick='generateUsername()']");
+
+  let searching = false;
+  let activeRequests = 0;
 
   function generateRandomUsername(length = 3) {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -9,45 +12,53 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateStatus(text, color = "#ccc") {
-    status.textContent = text;
-    status.style.color = color;
+    result.textContent = text;
+    result.style.color = color;
   }
 
-  function renderResults(usernames) {
-    output.innerHTML = "";
-    if (usernames.length === 0) {
-      updateStatus("No rare usernames found 😢", "#f33");
-      return;
-    }
-
-    updateStatus(`✅ Found ${usernames.length} rare usernames`, "#3f3");
-    usernames.forEach(name => {
-      const li = document.createElement("li");
-      li.textContent = name;
-      li.style.fontFamily = "monospace";
-      output.appendChild(li);
-    });
-  }
-
-  async function generateBatch(count = 1000) {
-    button.disabled = true;
+  async function generateUsername() {
+    if (searching) return;
+    searching = true;
+    generateBtn.style.display = "none";
+    stopBtn.style.display = "inline-block";
     updateStatus("🔍 Searching for rare usernames...");
 
-    const usernames = Array.from({ length: count }, () => generateRandomUsername(3));
-    const query = usernames.map(u => `u=${encodeURIComponent(u)}`).join("&");
+    while (searching) {
+      const batchSize = 100;
+      const usernames = Array.from({ length: batchSize }, () => generateRandomUsername(3));
+      const query = usernames.map(u => `u=${encodeURIComponent(u)}`).join("&");
 
-    try {
-      const res = await fetch(`https://rareproxy.havocgdash.workers.dev/batch?${query}`);
-      const data = await res.json();
-      const available = data.filter(r => r.valid).map(r => r.username);
-      renderResults(available);
-    } catch (err) {
-      updateStatus("⚠️ Error fetching usernames", "#f33");
-      console.error("Batch error:", err);
+      activeRequests++;
+      try {
+        const res = await fetch(`https://rareproxy.havocgdash.workers.dev/batch?${query}`);
+        const data = await res.json();
+        const available = data.filter(r => r.valid).map(r => r.username);
+
+        if (available.length > 0) {
+          updateStatus(`✅ Found: ${available.join(", ")}`, "#3f3");
+          searching = false;
+          generateBtn.style.display = "inline-block";
+          stopBtn.style.display = "none";
+          return;
+        } else {
+          updateStatus(`⏳ Checked ${batchSize * activeRequests} usernames... still searching`, "#999");
+        }
+      } catch (err) {
+        updateStatus("⚠️ Error during batch request", "#f33");
+        console.error("Batch error:", err);
+        searching = false;
+      }
+      activeRequests--;
+      await new Promise(resolve => setTimeout(resolve, 100)); // throttle loop
     }
-
-    button.disabled = false;
   }
 
-  button.onclick = () => generateBatch(1000);
+  window.generateUsername = generateUsername;
+
+  window.stopUsernameSearch = () => {
+    searching = false;
+    generateBtn.style.display = "inline-block";
+    stopBtn.style.display = "none";
+    updateStatus("⛔ Search stopped.");
+  };
 });
